@@ -1,0 +1,19 @@
+{
+    "name": "dimassin/site-map",
+    "description": "Генератор карты сайта",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "SiteMap\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Dimassin",
+            "email": "maksimov.dima21@mail.ru"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
