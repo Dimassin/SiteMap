@@ -1,40 +1,53 @@
 <?php
-//111111111111111
+
 namespace SiteMap;
+
+use SiteMap\Exceptions\InvalidFileTypeException;
+use SiteMap\Exceptions\InvalidArrayException;
 
 class SiteMap
 {
     private array $pages;
     private string $fileType;
+    private string $filePath;
 
-    public function __construct(array $data, string $fileType)
+    public function __construct(array $data, string $fileType, string $filePath)
     {
         $this->pages = $data;
-        $this->fileType = $fileType;
+        $this->filePath = $filePath;
+        $this->fileType = strtoupper($fileType);
     }
 
-    public function generate(): string
+    public function generate(): void
     {
-        if (!$this->validate()) {
-            return 'Неверный формат входных данных';
-        }
+        $this->validate();
 
-        switch (strtoupper($this->fileType)) {
+        $content = '';
+        switch ($this->fileType) {
             case 'XML':
-                return $this->xml();
+                $content = $this->xml();
+                break;
             case 'CSV':
-                return $this->csv();
+                $content = $this->csv();
+                break;
             case 'JSON':
-                return $this->json();
+                $content = $this->json();
+                break;
             default:
-                throw new InvalidFileTypeException("Unsupported file type");
+                throw new InvalidFileTypeException;
         }
+
+        mkdir($this->filePath, 0777, true);
+        file_put_contents($this->filePath . '/file.xml', $content);
     }
 
-    private function validate(): bool
+    private function validate(): void
     {
-
-        return true;
+        foreach ($this->pages as $page) {
+            if (!is_array($page) || !isset($page['loc'], $page['lastmod'], $page['priority'], $page['changefreq'])) {
+                throw new InvalidArrayException;
+            }
+        }
     }
 
     private function xml(): string
@@ -57,14 +70,14 @@ class SiteMap
         $print .= '
 </urlset>';
 
-        return '<pre>' . htmlspecialchars($print) . '</pre>';
+        return html_entity_decode(htmlspecialchars($print));
     }
 
     private function csv(): string
     {
-        $print = 'loc;lastmod;priority;changefreq<br>';
+        $print = 'loc;lastmod;priority;changefreq' . "\n";
         foreach ($this->pages as $page) {
-            $print .= $page['loc'] . ';' . $page['lastmod'] . ';' . $page['priority'] . ';' . $page['changefreq'] . '<br>';
+            $print .= $page['loc'] . ';' . $page['lastmod'] . ';' . $page['priority'] . ';' . $page['changefreq'] . '<br>' . "\n";
         }
 
         return $print;
@@ -74,13 +87,13 @@ class SiteMap
     {
         $print = '[';
         foreach ($this->pages as $key => $page) {
-            $print .= '{<br>'
-            . ' loc: ' . $page['loc'] . ',<br>'
-            . ' lastmod: ' . $page['lastmod'] . ',<br>'
-            . ' priority: ' . $page['priority'] . ',<br>'
-            . ' changefreq: ' . $page['changefreq'] . '<br>}' . (count($this->pages) !== $key + 1 ? '<br>' : '');
+            $print .= '{' . "\n"
+                . ' loc: ' . $page['loc'] . "\n"
+                . ' lastmod: ' . $page['lastmod'] . "\n"
+                . ' priority: ' . $page['priority'] . "\n"
+                . ' changefreq: ' . $page['changefreq'] . "\n" . '}' . (count($this->pages) !== $key + 1 ? "\n" : '');
         }
 
-        return '<pre>' . $print . ']' . '</pre>';
+        return $print . ']';
     }
 }
